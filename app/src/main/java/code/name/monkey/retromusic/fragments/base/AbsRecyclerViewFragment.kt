@@ -16,7 +16,6 @@ package code.name.monkey.retromusic.fragments.base
 
 import android.os.Bundle
 import android.view.*
-import androidx.annotation.NonNull
 import androidx.annotation.StringRes
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.doOnPreDraw
@@ -161,7 +160,6 @@ abstract class AbsRecyclerViewFragment<A : RecyclerView.Adapter<*>, LM : Recycle
 
     protected abstract fun createLayoutManager(): LM
 
-    @NonNull
     protected abstract fun createAdapter(): A
 
     protected fun invalidateLayoutManager() {

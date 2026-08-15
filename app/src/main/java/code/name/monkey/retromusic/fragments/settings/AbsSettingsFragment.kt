@@ -19,6 +19,7 @@ import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.updatePadding
 import androidx.preference.ListPreference
 import androidx.preference.Preference
@@ -26,7 +27,6 @@ import androidx.preference.PreferenceManager
 import code.name.monkey.appthemehelper.common.prefs.supportv7.ATEPreferenceFragmentCompat
 import code.name.monkey.retromusic.R
 import code.name.monkey.retromusic.extensions.dip
-import code.name.monkey.retromusic.extensions.goToProVersion
 import code.name.monkey.retromusic.extensions.showToast
 import code.name.monkey.retromusic.preferences.*
 import dev.chrisbanes.insetter.applyInsetter
@@ -36,11 +36,6 @@ import dev.chrisbanes.insetter.applyInsetter
  */
 
 abstract class AbsSettingsFragment : ATEPreferenceFragmentCompat() {
-
-    internal fun showProToastAndNavigate(message: String) {
-        showToast(getString(R.string.message_pro_feature, message))
-        requireContext().goToProVersion()
-    }
 
     internal fun setSummary(preference: Preference, value: Any?) {
         val stringValue = value.toString()
@@ -66,7 +61,7 @@ abstract class AbsSettingsFragment : ATEPreferenceFragmentCompat() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setDivider(ColorDrawable(Color.TRANSPARENT))
+        setDivider(Color.TRANSPARENT.toDrawable())
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             listView.overScrollMode = View.OVER_SCROLL_NEVER
         }

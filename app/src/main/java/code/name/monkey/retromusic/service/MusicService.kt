@@ -298,6 +298,7 @@ class MusicService : MediaBrowserServiceCompat(),
         }
     }
     private var throttledSeekHandler: ThrottledSeekHandler? = null
+    private var audioVolumeObserver: AudioVolumeObserver? = null
     private var uiThreadHandler: Handler? = null
     private var wakeLock: WakeLock? = null
     private var notificationManager: NotificationManager? = null
@@ -347,8 +348,9 @@ class MusicService : MediaBrowserServiceCompat(),
             true,
             mediaStoreObserver
         )
-        val audioVolumeObserver = AudioVolumeObserver(this)
-        audioVolumeObserver.register(AudioManager.STREAM_MUSIC, this)
+        audioVolumeObserver = AudioVolumeObserver(this).also {
+            it.register(AudioManager.STREAM_MUSIC, this)
+        }
         registerOnSharedPreferenceChangedListener(this)
         restoreState()
         sendBroadcast(Intent("$RETRO_MUSIC_PACKAGE_NAME.RETRO_MUSIC_SERVICE_CREATED"))
@@ -371,13 +373,15 @@ class MusicService : MediaBrowserServiceCompat(),
             unregisterReceiver(bluetoothReceiver)
             bluetoothConnectedRegistered = false
         }
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M && audioDeviceCallback != null) {
+        if (audioDeviceCallback != null) {
             getSystemService<AudioManager>()?.unregisterAudioDeviceCallback(audioDeviceCallback!!)
         }
         mediaSession?.isActive = false
         quit()
         releaseResources()
         serviceScope.cancel()
+        audioVolumeObserver?.unregister()
+        audioVolumeObserver = null
         contentResolver.unregisterContentObserver(mediaStoreObserver)
         unregisterOnSharedPreferenceChangedListener(this)
         wakeLock?.release()
@@ -1298,22 +1302,23 @@ class MusicService : MediaBrowserServiceCompat(),
     private fun registerBluetoothConnected() {
         Log.i(TAG, "registerBluetoothConnected: ")
         // Fixed by : Zak (github: @arrhenius975) - Fix Bluetooth auto-play reliability using AudioDeviceCallback
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            if (audioDeviceCallback == null) {
-                audioDeviceCallback = object : AudioDeviceCallback() {
-                    override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>) {
-                        if (isBluetoothSpeaker) {
-                            for (device in addedDevices) {
-                                if (device.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP) {
-                                    play()
-                                    break
-                                }
+        if (audioDeviceCallback == null) {
+            audioDeviceCallback = object : AudioDeviceCallback() {
+                override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>) {
+                    if (isBluetoothSpeaker) {
+                        for (device in addedDevices) {
+                            if (device.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP) {
+                                play()
+                                break
                             }
                         }
                     }
                 }
-                getSystemService<AudioManager>()?.registerAudioDeviceCallback(audioDeviceCallback!!, Handler(Looper.getMainLooper()))
             }
+            getSystemService<AudioManager>()?.registerAudioDeviceCallback(
+                audioDeviceCallback!!,
+                Handler(Looper.getMainLooper())
+            )
         } else if (!bluetoothConnectedRegistered) {
             ContextCompat.registerReceiver(
                 this,
